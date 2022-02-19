@@ -67,7 +67,6 @@ def upload_file():
             person.tempat = Correction.correct('tempat',Pretext.get_tempat(person.tempat))
             person.kec = Correction.correct('kec',Pretext.get_kec(person.kec))
             person.kel = Pretext.get_kel(person.kel)
-            print("cok")
             return jsonify({'data':person.to_dict(),'raw':ocr_result})
             # except:
                 # return jsonify({'status': "404"})

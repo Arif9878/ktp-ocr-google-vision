@@ -1,83 +1,35 @@
-from distutils.command.config import config
-import cv2 
-import pytesseract
-import numpy as np
-from scipy.ndimage import interpolation as inter
+from importlib.resources import contents
+from google.cloud import vision
+import os, io
 
-
+client = vision.ImageAnnotatorClient()
 class OCR:
     @staticmethod
     def read_image(path):
-        return cv2.imread(path)
+        file_name = os.path.abspath(path)
 
-    @staticmethod
-    def correct_skew(image, delta=1, limit=5):
-        def determine_score(arr, angle):
-            data = inter.rotate(arr, angle, reshape=False, order=0)
-            histogram = np.sum(data, axis=1)
-            score = np.sum((histogram[1:] - histogram[:-1]) ** 2)
-            return histogram, score
-
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1] 
-
-        scores = []
-
-        angles = np.arange(-limit, limit + delta, delta)
-        for angle in angles:
-            histogram, score = determine_score(thresh, angle)
-            scores.append(score)
-
-        best_angle = angles[scores.index(max(scores))]
-
-        (h, w) = image.shape[:2]
-        center = (w // 2, h // 2)
-        M = cv2.getRotationMatrix2D(center, best_angle, 1.0)
-        rotated = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
-
-        return best_angle, rotated
-
-    @staticmethod
-    def get_grayscale(image):
-        return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    @staticmethod
-    def get_rgb(image):
-        return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-    @staticmethod
-    def equalize_hist(image):
-        return cv2.equalizeHist(image)
-
-    @staticmethod
-    def otsu_threshold(image):
-        return cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-
-    @staticmethod
-    def adaptive_threshold(image):
-        return cv2.adaptiveThreshold(image,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY_INV,21,4)
+        # Loads the image into memory
+        with io.open(file_name, 'rb') as image_file:
+            content = image_file.read()
+            image = vision.Image(content=content)
+            return image
 
     @staticmethod
     def image_to_string(path):
         image = OCR.read_image(path)
-        image = OCR.correct_skew(image)[1]
-        image = OCR.get_grayscale(image)
-        # image = OCR.otsu_threshold(image)
-        # threshed = OCR.adaptive_threshold(image)
-        th, threshed = cv2.threshold(image, 111, 255, cv2.THRESH_TRUNC)
 
-        custom_config =  r'-l ind --psm 6 tessedit_char_whitelist=0123456789'
         filtered = []
         try:
-            d = pytesseract.image_to_string((threshed), config=custom_config)
-            clear_data = d.split('\n')
+            response = client.document_text_detection(image=image)
+            full_text = response.full_text_annotation
+            clear_data = full_text.text.split('\n')
             for item in clear_data:
                 if item.isspace() or len(item) <= 2:
                     continue
                 else:
                     filtered.append(item)
-        except RuntimeError as timeout_error:
+        except:
             return None
 
-        return filtered
+        return filtered 
         

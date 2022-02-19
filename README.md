@@ -17,11 +17,15 @@ To install tesseract OCR Click [here](https://tesseract-ocr.github.io/tessdoc/In
     virtualenv venv
     source venv/bin/activate
     ```
-4. Install dependencies
+4. Set Google Credentials
+    ```sh
+    export GOOGLE_APPLICATION_CREDENTIALS="/home/user/Downloads/service-account-file.json"
+    ```
+5. Install dependencies
      ```sh
     pip install -r requirement.txt
     ```
-5. running the server, this is for development server
+6. running the server, this is for development server
     ```sh
     python wsgi.py
     ```

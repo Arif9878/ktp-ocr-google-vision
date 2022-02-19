@@ -36,7 +36,7 @@ class Result:
 
     @staticmethod
     def regex_rt_rw(string):
-        return re.search("(^rt|^rt.+rw\s)",string)
+        return re.search("(^rtrw|^rt|^rw\s)",string)
 
     @staticmethod
     def nik_extract(word):
@@ -51,7 +51,8 @@ class Result:
                 res += word_dict[letter]
             else:
                 res += letter
-        replace_text = res.replace(' ', '')
+        replace_text = res.replace('NIK', '')
+        replace_text = replace_text.replace(' ', '')
         return replace_text
 
     @staticmethod
@@ -63,9 +64,11 @@ class Result:
     def rt_rw_extract(word):
         rt = ""
         rw = ""
-        replace_text = word.replace('rtrw :', '')
-        replace_text = word.replace('rtirw', '')
-        replace_text = replace_text.replace(' ', '')
+        replace_text = word.replace('rtrw ', '')
+        replace_text = replace_text.replace('rt/rw ', '')
+        replace_text = replace_text.replace('rtirw :', '')
+        replace_text = replace_text.replace('rt/rw :', '')
+        replace_text = replace_text.replace(':', '')
         replace_text = replace_text.replace('/', ' ')
         splited_text = replace_text.split(' ')
         if len(splited_text) > 1:
@@ -74,23 +77,37 @@ class Result:
         return rt, rw
 
     @staticmethod
+    def ttl_extraxt(word):
+        tempat = ""
+        tgl_lahir = ""
+        splited_text = word.split(',')
+        if len(splited_text) > 1:
+            tempat = splited_text[0]
+            tgl_lahir = splited_text[1]
+        return tempat, tgl_lahir
+
+    @staticmethod
     def prepare_result(list_of_string):
         person = Person()
         if list_of_string is not None:
+            person.nama = list_of_string[5]
+            person.nik = Result.nik_extract(list_of_string[2])
             for item in list_of_string:
                 item = item.lower()
-                if Result.regex_nama(item):
-                    person.nama = item
-                if Result.regex_nik(item):
-                    nik = Result.nik_extract(item)
-                    person.nik = nik
-                if Result.regex_tempat(item):
-                    person.tempat = item
-                if Result.regex_tgl_lahir(item):
-                    person.tgl_lahir = item
                 if Result.regex_prov(item):
                     prov = Result.prov_extract(item)
                     person.prov = prov
+                if len(list_of_string) <= 23:
+                    tempat, tgl_lahir = Result.ttl_extraxt(list_of_string[7])
+                    if len(list_of_string) <= 21:
+                        tempat, tgl_lahir = Result.ttl_extraxt(list_of_string[6])
+                    person.tempat = tempat.lower()
+                    person.tgl_lahir = tgl_lahir
+                else:
+                    if Result.regex_tempat(item):
+                        person.tempat = item
+                    if Result.regex_tgl_lahir(item):
+                        person.tgl_lahir = item
                 if Result.regex_kab(item):
                     person.kab = item
                 if Result.regex_kec(item):
